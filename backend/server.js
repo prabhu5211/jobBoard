@@ -32,9 +32,22 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // CORS — must be before routes
+const allowedOrigins = [
+  'https://job-board-k9.vercel.app',
+  'http://localhost:5173',
+  process.env.CLIENT_URL,
+].filter(Boolean).map((o) => o.trim());
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL, // must be set in production
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin.trim())) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
